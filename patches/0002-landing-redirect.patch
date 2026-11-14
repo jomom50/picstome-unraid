@@ -1,0 +1,44 @@
+Subject: [PATCH] Send guests to a configurable landing page from the root URL
+
+The home route always redirects to the dashboard, so anyone who is not signed
+in is bounced to the login screen. LANDING_REDIRECT lets the container point
+visitors at a public page (the studio portfolio, for example) while signed-in
+users keep the dashboard.
+
+The value is read in config/app.php so the configuration cache keeps it;
+reading the container environment from the route itself would return null
+once the config is cached.
+
+diff --git a/config/app.php b/config/app.php
+--- a/config/app.php
++++ b/config/app.php
+@@ -15,6 +15,8 @@
+ 
+     'name' => env('APP_NAME', 'Laravel'),
+ 
++    'landing_redirect' => env('LANDING_REDIRECT'),
++
+     /*
+     |--------------------------------------------------------------------------
+     | Application Environment
+
+diff --git a/routes/web.php b/routes/web.php
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -235,7 +235,15 @@
+ })->name('billing-portal')->middleware(['auth', 'verified']);
+ 
+ Route::get('/', function () {
+-    return to_route('dashboard');
++    if (auth()->check()) {
++        return to_route('dashboard');
++    }
++
++    if ($landing = config('app.landing_redirect')) {
++        return redirect()->to($landing);
++    }
++
++    return to_route('dashboard');
+ })->name('home');
+ 
+ Route::get('/settings', function () {

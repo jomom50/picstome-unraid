@@ -1,0 +1,28 @@
+diff --git a/bootstrap/app.php b/bootstrap/app.php
+index 1b01144..05d3794 100644
+--- a/bootstrap/app.php
++++ b/bootstrap/app.php
+@@ -13,8 +13,21 @@
+         health: '/up',
+     )
+     ->withMiddleware(function (Middleware $middleware) {
+-        // Trust the local reverse proxy only outside production.
+-        if (in_array(env('APP_ENV', 'production'), ['local', 'testing'], true)) {
++        // When Picstome runs behind a reverse proxy, trust the configured
++        // proxies so HTTPS detection, generated links and the per-client rate
++        // limits see the real client instead of the proxy.
++        $trustedProxies = env('TRUSTED_PROXIES');
++
++        if (is_string($trustedProxies) && $trustedProxies !== '') {
++            $middleware->trustProxies(
++                at: $trustedProxies === '*' ? '*' : array_map('trim', explode(',', $trustedProxies)),
++                headers: \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR
++                    | \Illuminate\Http\Request::HEADER_X_FORWARDED_HOST
++                    | \Illuminate\Http\Request::HEADER_X_FORWARDED_PORT
++                    | \Illuminate\Http\Request::HEADER_X_FORWARDED_PROTO,
++            );
++        } elseif (in_array(env('APP_ENV', 'production'), ['local', 'testing'], true)) {
++            // Trust the local reverse proxy only outside production.
+             $middleware->trustProxies(at: '127.0.0.1');
+         }
+ 

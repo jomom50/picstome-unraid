@@ -1,0 +1,81 @@
+# A negative response must never be cacheable. A proxy that stores a 404 keeps
+# replaying it long after the cause is fixed, and the fixed asset URL is
+# already in every client's HTML, so nothing short of a purge brings it back.
+map $status $picstome_error_cache {
+    404 "no-store";
+    default "";
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name _;
+
+    root /var/www/html/public;
+    index index.php;
+
+    charset utf-8;
+    server_tokens off;
+
+    # RAW files and videos are large, and gallery ZIP builds stream for a long
+    # time, so both the body size and the FastCGI timeouts are generous.
+    client_max_body_size ${UPLOAD_MAX_SIZE};
+    client_body_timeout 3600s;
+    send_timeout 3600s;
+    fastcgi_read_timeout 3600s;
+    fastcgi_send_timeout 3600s;
+
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Cache-Control $picstome_error_cache always;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ^~ /build/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    location ~* \.(?:css|js|jpg|jpeg|png|gif|ico|svg|webp|woff2?)$ {
+        access_log off;
+        # Livewire and TallStackUI serve their JavaScript from routes, not files
+        # on disk, so a missing static path has to fall through to PHP instead
+        # of 404ing. No expires here either: it would stamp a 30-day TTL on the
+        # 404 of any route that is not registered yet, and browsers would keep
+        # replaying it long after the cause was fixed. Hashed build assets get
+        # their one-year cache from the /build/ block below.
+        try_files $uri /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        # Debian's fastcgi_params sends `$host`, which drops the port the client
+        # used. Combined with the fixed SERVER_PORT below, the app then builds
+        # absolute URLs (redirects, assets, share links) without the port, so
+        # reaching the container directly on a published port breaks. Send the
+        # header exactly as received instead.
+        fastcgi_param HTTP_HOST $http_host;
+        fastcgi_pass unix:/run/php-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT $realpath_root;
+        fastcgi_param HTTPS ${HTTPS_VALUE};
+        fastcgi_param SERVER_PORT ${SERVER_PORT_VALUE};
+        fastcgi_param HTTP_PROXY "";
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}

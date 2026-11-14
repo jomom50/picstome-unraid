@@ -1,0 +1,10 @@
+# Local reference clone of the Picstome source (not part of this repository)
+/upstream/
+
+# Build/test leftovers
+*.log
+.DS_Store
+Thumbs.db
+
+# Editor/agent metadata
+.freebuff/

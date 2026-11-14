@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Picstome</Name>
+  <Repository>jomom50/picstome:latest</Repository>
+  <Registry>https://hub.docker.com/r/jomom50/picstome</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/jomom50/picstome-unraid/issues</Support>
+  <Project>https://github.com/picstome/picstome</Project>
+  <Overview>Self-hosted galleries, contracts, invoicing and client management for photographers. Everything runs in one container: web server, PHP, queue worker, scheduler, SQLite database and MinIO photo storage.</Overview>
+  <Category>MediaApp:Photos</Category>
+  <WebUI>http://[IP]:[PORT:80]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/jomom50/picstome-unraid/main/templates/picstome.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/jomom50/picstome-unraid/main/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>Picstome is free open-source software for photographers: client galleries with proofing and downloads, contracts with e-signatures, invoices, a portfolio page and a client CRM.
+
+This template runs the whole stack in a single container. Photo storage uses MinIO inside the container, because Picstome requires an S3-compatible store. The S3 port therefore has to stay reachable from the browsers that view galleries.
+
+Two URL settings matter: "Public URL" is the address of the web interface, and "Photo Storage URL" is the address of the S3 endpoint. Both must be reachable by your clients. Behind a reverse proxy, put the S3 endpoint on its own hostname, for example photos.example.com.
+
+First run creates the admin account from the fields below, with unlimited storage and no subscription. Further accounts can be registered in the web UI, where you can also raise their limits under Users.
+
+Upstream project (AGPL-3.0): https://github.com/picstome/picstome</Description>
+
+  <Config Name="WebUI Port" Target="80" Default="8282" Mode="tcp" Description="Port for the Picstome web interface. Container port is 80." Type="Port" Display="always" Required="true" Mask="false">8282</Config>
+
+  <Config Name="Photo Storage Port" Target="9000" Default="9000" Mode="tcp" Description="MinIO S3 endpoint. Browsers download gallery photos from this port, so it must be reachable from client devices." Type="Port" Display="always" Required="true" Mask="false">9000</Config>
+
+  <Config Name="Appdata" Target="/data" Default="/mnt/user/appdata/picstome" Mode="rw" Description="The only path that has to persist: database, logs and generated secrets (plus photos, unless the optional path below is mapped). Any directory works — on Unraid the usual choice is /mnt/user/appdata/picstome; on another host use something like /srv/picstome." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/picstome</Config>
+
+  <Config Name="Photo Storage Path" Target="/data/minio" Default="/mnt/user/appdata/picstome/minio" Mode="rw" Description="Optional. A separate directory for gallery photos, handy for keeping them out of appdata backups or on a bigger disk. Any path works and it can be changed or removed later; if it is removed, photos stay under Appdata. The object store keeps its own layout, so the files are not browsable as plain images." Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/picstome/minio</Config>
+
+  <Config Name="Public URL" Target="APP_URL" Default="http://[IP]:[PORT:80]" Mode="" Description="Address used in emails, share links and contracts. Use the exact public URL, including https:// when behind a TLS reverse proxy." Type="Variable" Display="always" Required="true" Mask="false">http://[IP]:[PORT:80]</Config>
+
+  <Config Name="Photo Storage URL" Target="PICSTOME_PHOTOS_URL" Default="http://[IP]:[PORT:9000]" Mode="" Description="Public address of the S3 photo endpoint, without the bucket name. Behind a reverse proxy use a dedicated hostname such as https://photos.example.com." Type="Variable" Display="always" Required="true" Mask="false">http://[IP]:[PORT:9000]</Config>
+
+  <Config Name="Admin Email" Target="PICSTOME_ADMIN_EMAIL" Default="" Mode="" Description="Email of the admin account created on first start. This address also grants admin access later." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+
+  <Config Name="Admin Name" Target="PICSTOME_ADMIN_NAME" Default="Picstome Admin" Mode="" Description="Display name for the first admin account and its studio." Type="Variable" Display="always" Required="true" Mask="false">Picstome Admin</Config>
+
+  <Config Name="Admin Password" Target="PICSTOME_ADMIN_PASSWORD" Default="" Mode="" Description="Password for the first admin account. Only used when no user exists yet. Leave empty to generate one into the appdata folder." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+
+  <Config Name="SMTP Host" Target="MAIL_HOST" Default="" Mode="" Description="Mail server used for account verification, gallery shares, contracts and reminders." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+
+  <Config Name="SMTP Port" Target="MAIL_PORT" Default="587" Mode="" Description="587 for STARTTLS, 465 for implicit TLS." Type="Variable" Display="always" Required="true" Mask="false">587</Config>
+
+  <Config Name="SMTP Encryption" Target="MAIL_SCHEME" Default="smtp" Mode="" Description="smtp for port 587 (STARTTLS), smtps for port 465." Type="Variable" Display="always" Required="true" Mask="false">smtp</Config>
+
+  <Config Name="SMTP Username" Target="MAIL_USERNAME" Default="" Mode="" Description="Usually the full email address for your mail provider." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <Config Name="SMTP Password" Target="MAIL_PASSWORD" Default="" Mode="" Description="Password or app password from your mail provider." Type="Variable" Display="always" Required="false" Mask="true"></Config>
+
+  <Config Name="From Address" Target="MAIL_FROM_ADDRESS" Default="" Mode="" Description="Sender address shown on outgoing email. Leave empty to use the admin email." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+
+  <Config Name="From Name" Target="MAIL_FROM_NAME" Default="Picstome" Mode="" Description="Sender name shown on outgoing email." Type="Variable" Display="always" Required="false" Mask="false">Picstome</Config>
+
+  <Config Name="Mail Transport" Target="MAIL_MAILER" Default="smtp" Mode="" Description="smtp sends real email. log writes messages to the container log instead, useful while testing." Type="Variable" Display="advanced" Required="false" Mask="false">smtp</Config>
+
+  <Config Name="Timezone" Target="APP_TIMEZONE" Default="UTC" Mode="" Description="Application timezone, for example Europe/Madrid. Affects reminders and contract dates." Type="Variable" Display="advanced" Required="false" Mask="false">UTC</Config>
+
+  <Config Name="Language" Target="APP_LOCALE" Default="en" Mode="" Description="Default interface language: en or es." Type="Variable" Display="advanced" Required="false" Mask="false">en</Config>
+
+  <Config Name="Max Upload Size" Target="UPLOAD_MAX_SIZE" Default="512M" Mode="" Description="Maximum size of a single upload, applied to both nginx and PHP. Raise it if you upload large videos." Type="Variable" Display="advanced" Required="false" Mask="false">512M</Config>
+
+  <Config Name="PHP Memory Limit" Target="PHP_MEMORY_LIMIT" Default="512M" Mode="" Description="Memory allowed per PHP process." Type="Variable" Display="advanced" Required="false" Mask="false">512M</Config>
+
+  <Config Name="PHP Timeout" Target="PHP_MAX_EXECUTION_TIME" Default="300" Mode="" Description="Seconds a web request may run. Large gallery downloads are handled separately." Type="Variable" Display="advanced" Required="false" Mask="false">300</Config>
+
+  <Config Name="Photo CDN Mode" Target="PICSTOME_PHOTO_CDN_DOMAIN" Default="bunny" Mode="" Description="bunny serves photos directly from your own storage (recommended, nothing leaves your server). wsrv.nl resizes images through a third-party CDN, which must be able to reach your Photo Storage URL." Type="Variable" Display="advanced" Required="false" Mask="false">bunny</Config>
+
+  <Config Name="Trusted Proxies" Target="TRUSTED_PROXIES" Default="*" Mode="" Description="Reverse proxies allowed to send X-Forwarded headers. * accepts any proxy, which is normal on a home network. Set the proxy IP for a stricter setup." Type="Variable" Display="advanced" Required="false" Mask="false">*</Config>
+
+  <Config Name="Landing Page" Target="LANDING_REDIRECT" Default="" Mode="" Description="Optional. Send anonymous visitors who open the root URL to this public page instead of the login screen, for example /@yourhandle/portfolio. Signed-in users still reach the dashboard. Leave empty to keep the default behaviour." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+
+  <Config Name="Run Migrations" Target="AUTO_MIGRATE" Default="true" Mode="" Description="Apply database migrations on every start. Leave enabled so updates always migrate." Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="warning" Mode="" Description="Laravel log level: debug, info, warning or error." Type="Variable" Display="advanced" Required="false" Mask="false">warning</Config>
+
+  <Config Name="S3 Bucket" Target="S3_BUCKET" Default="picstome" Mode="" Description="Name of the bucket inside the bundled object store. Only change it when reusing an external bucket." Type="Variable" Display="advanced" Required="false" Mask="false">picstome</Config>
+
+  <Config Name="S3 Region" Target="S3_REGION" Default="us-east-1" Mode="" Description="Region reported to the S3 client. MinIO accepts us-east-1 by default." Type="Variable" Display="advanced" Required="false" Mask="false">us-east-1</Config>
+
+  <Config Name="Queue Worker Timeout" Target="QUEUE_WORKER_TIMEOUT" Default="3700" Mode="" Description="Seconds the queue worker allows per job. Must stay above the gallery archive timeout of 3600." Type="Variable" Display="advanced" Required="false" Mask="false">3700</Config>
+</Container>
