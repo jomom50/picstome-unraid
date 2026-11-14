@@ -275,5 +275,22 @@ as_app_user php artisan config:clear >/dev/null 2>&1 || true
 as_app_user php artisan config:cache >/dev/null 2>&1 || warn "Could not cache the configuration."
 as_app_user php artisan view:cache >/dev/null 2>&1 || warn "Could not cache the Blade views."
 
+# ---------------------------------------------------------------------------
+# Photo storage reachability
+# ---------------------------------------------------------------------------
+# PICSTOME_PHOTOS_URL carries the app's own S3 calls, not just the links shown
+# to browsers, and the S3 disk is configured not to throw. A URL this container
+# cannot reach therefore fails every upload silently. Probe it in the
+# background so the first screen of `docker logs` says so instead.
+(
+    sleep 20
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AWS_URL}/" 2>/dev/null || true)"
+
+    if [ -z "${code}" ] || [ "${code}" = "000" ]; then
+        warn "Cannot reach ${PICSTOME_PHOTOS_URL} from inside this container, so uploads will fail."
+        warn "Use an address the container itself can resolve, or add --add-host <host>:<lan-ip>."
+    fi
+) &
+
 log "Starting services (web, php-fpm, queue worker, scheduler, object storage)."
 exec "$@"

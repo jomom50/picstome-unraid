@@ -28,8 +28,24 @@ mc alias set picstome "${ENDPOINT}" "${MINIO_ROOT_USER}" "${MINIO_ROOT_PASSWORD}
 mc mb --ignore-existing "picstome/${S3_BUCKET}" >/dev/null
 
 # Picstome renders photos with plain object URLs (not presigned ones), so the
-# bucket has to be readable by anonymous visitors. Gallery links are what make
-# the objects discoverable; object keys contain ULIDs.
-mc anonymous set download "picstome/${S3_BUCKET}" >/dev/null
+# bucket has to be readable by anonymous visitors. "set download" also allows
+# ListBucket, which would let anyone enumerate every client's photo keys, so
+# grant GetObject only.
+POLICY_FILE="$(mktemp)"
+cat > "${POLICY_FILE}" <<JSON
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {"AWS": ["*"]},
+      "Action": ["s3:GetObject"],
+      "Resource": ["arn:aws:s3:::${S3_BUCKET}/*"]
+    }
+  ]
+}
+JSON
+mc anonymous set-json "${POLICY_FILE}" "picstome/${S3_BUCKET}" >/dev/null
+rm -f "${POLICY_FILE}"
 
 log "Bucket ${S3_BUCKET} is ready."
