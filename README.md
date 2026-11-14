@@ -331,8 +331,21 @@ RAW extraction depends on ExifTool, which is installed in the image. Check `dock
 **Queue or scheduler shows as stopped**
 Open `/admin/queue` as an admin. Both processes run under supervisord; if either died, `docker logs Picstome` shows why.
 
-**Photos upload but stay pending**
-The queue worker processes them. Confirm it is running: `docker exec Picstome supervisorctl status`.
+**Uploads fail, or a photo stays pending forever**
+Nine times out of ten the container cannot reach its own Photo Storage URL: that address carries the S3 writes as well as the links shown to browsers, so a hostname that does not resolve from inside the container (NAT loopback, split DNS, the proxy not running yet) makes every upload fail. Test it from inside the container:
+
+```bash
+docker exec Picstome sh -c 'curl -fsS --max-time 5 "$PICSTOME_PHOTOS_URL/minio/health/live" >/dev/null && echo reachable || echo NOT reachable'
+```
+
+The fingerprint of that failure is a photo row whose `path` is empty while its status stays `pending`, because the S3 disk is configured not to throw. The fix is the NAT loopback entry above, or pointing the Photo Storage URL at an address the container itself can resolve.
+
+Also check:
+
+- `docker exec Picstome supervisorctl status` — the queue worker must be RUNNING.
+- `docker logs Picstome | grep -i error` and `/data/storage/logs/laravel.log`.
+- A 413 means the file is bigger than **Max Upload Size**; raise it and `client_max_body_size` in the proxy.
+- Panoramas wider than 16,384 px used to fail with `Unable to create new image`; this image raises the ImageMagick limits, so update the container.
 
 ---
 

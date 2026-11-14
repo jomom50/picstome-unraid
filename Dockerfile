@@ -120,6 +120,23 @@ RUN install-php-extensions \
 
 RUN cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
+# Debian's ImageMagick policy caps width/height at 16KP (16384 px) and the
+# pixel cache at 256MiB, so a panorama or a large camera file fails with
+# "Unable to create new image" while ordinary photos work. Raise the ceilings
+# but keep the security denials (PostScript, PDF, URL coders) in place.
+RUN set -eux; \
+    for p in /etc/ImageMagick-*/policy.xml; do \
+        [ -f "$p" ] || continue; \
+        sed -i \
+            -e 's|name="memory" value="256MiB"|name="memory" value="512MiB"|' \
+            -e 's|name="map" value="512MiB"|name="map" value="1GiB"|' \
+            -e 's|name="width" value="16KP"|name="width" value="32KP"|' \
+            -e 's|name="height" value="16KP"|name="height" value="32KP"|' \
+            -e 's|name="area" value="128MP"|name="area" value="256MP"|' \
+            -e 's|name="disk" value="1GiB"|name="disk" value="2GiB"|' \
+            "$p"; \
+    done
+
 # MinIO withdrew the community binaries from dl.min.io (HTTP 410) and its
 # Docker Hub images. These are the last releases that still publish assets on
 # GitHub; they are unmaintained, so treat them as a pinned dependency.
