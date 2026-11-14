@@ -47,7 +47,7 @@ Upstream project (AGPL-3.0): https://github.com/picstome/picstome</Description>
 
   <Config Name="Admin Password" Target="PICSTOME_ADMIN_PASSWORD" Default="" Mode="" Description="Password for the first admin account. Only used when no user exists yet. Leave empty to generate one into the appdata folder." Type="Variable" Display="always" Required="false" Mask="true"></Config>
 
-  <Config Name="SMTP Host" Target="MAIL_HOST" Default="" Mode="" Description="Mail server used for account verification, gallery shares, contracts and reminders." Type="Variable" Display="always" Required="true" Mask="false"></Config>
+  <Config Name="SMTP Host" Target="MAIL_HOST" Default="" Mode="" Description="Mail server for account verification, gallery and contract emails. Only needed when Mail Transport is smtp — leave it empty to install without mail and set it later." Type="Variable" Display="always" Required="false" Mask="false"></Config>
 
   <Config Name="SMTP Port" Target="MAIL_PORT" Default="587" Mode="" Description="587 for STARTTLS, 465 for implicit TLS." Type="Variable" Display="always" Required="true" Mask="false">587</Config>
 
@@ -83,7 +83,7 @@ Upstream project (AGPL-3.0): https://github.com/picstome/picstome</Description>
 
   <Config Name="Log Level" Target="LOG_LEVEL" Default="warning" Mode="" Description="Laravel log level: debug, info, warning or error." Type="Variable" Display="advanced" Required="false" Mask="false">warning</Config>
 
-  <Config Name="S3 Bucket" Target="S3_BUCKET" Default="picstome" Mode="" Description="Name of the bucket inside the bundled object store. Only change it when reusing an external bucket." Type="Variable" Display="advanced" Required="false" Mask="false">picstome</Config>
+  <Config Name="S3 Bucket" Target="S3_BUCKET" Default="picstome" Mode="" Description="Name of the bucket inside the bundled object store. It is created on first start, so changing it is safe; existing photos stay under the old bucket." Type="Variable" Display="advanced" Required="false" Mask="false">picstome</Config>
 
   <Config Name="S3 Region" Target="S3_REGION" Default="us-east-1" Mode="" Description="Region reported to the S3 client. MinIO accepts us-east-1 by default." Type="Variable" Display="advanced" Required="false" Mask="false">us-east-1</Config>
 

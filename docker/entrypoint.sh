@@ -71,6 +71,13 @@ export TRUSTED_PROXIES="${TRUSTED_PROXIES:-}"
 # reads it when the cache is built.
 export PICSTOME_ADMIN_EMAILS="${PICSTOME_ADMIN_EMAILS:-${PICSTOME_ADMIN_EMAIL:-}}"
 
+# Outgoing mail is sent "from" the admin address unless one is configured. Left
+# unset the framework falls back to hello@example.com, which most providers
+# reject, so the template's "leave empty to use the admin email" would be a lie.
+if [ -z "${MAIL_FROM_ADDRESS:-}" ] && [ -n "${PICSTOME_ADMIN_EMAIL:-}" ]; then
+    export MAIL_FROM_ADDRESS="${PICSTOME_ADMIN_EMAIL}"
+fi
+
 if [ -z "${PICSTOME_PHOTOS_URL}" ]; then
     export PICSTOME_PHOTOS_URL="http://127.0.0.1:9000"
     warn "PICSTOME_PHOTOS_URL is not set. Photos will only resolve inside the container."

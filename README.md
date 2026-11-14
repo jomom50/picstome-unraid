@@ -16,6 +16,18 @@ All persistent state lives under `/data`, which is the only path that has to sur
 
 ---
 
+## Before you install
+
+- **Two addresses clients can reach.** `APP_URL` (web UI) and `PICSTOME_PHOTOS_URL` (S3 endpoint) both appear in share links and in the `<img>` URLs of gallery pages, so any browser that opens a gallery must be able to resolve and reach them. A single `localhost` value is only enough for a test on the same machine.
+- **Serve it at the root of a hostname.** `/` has to be the app, so use `picstome.example.com`, not `example.com/picstome`. Behind a reverse proxy that means one host per address (section 3).
+- **Keep `/data` on local disk.** SQLite runs in WAL mode, which is unreliable on network shares; use a cache-pool or local path on Unraid. Photos are ordinary MinIO objects and can live on any disk you mount at `/data/minio`.
+- **Admin Email is required on first start.** It creates the account, the studio, and admin access.
+- **Mail is optional to begin with.** Leave SMTP empty and the admin account is still created, already verified; add SMTP later for gallery, contract and reminder email.
+- **The container runs as root** (it binds port 80 and owns `/data`), so do not pass `--user`.
+- **Linux containers only**, `amd64` and `arm64`.
+
+---
+
 ## Quick start — any Docker host
 
 Nothing here is tied to Unraid or to any particular directory. One named volume is enough:
@@ -237,7 +249,7 @@ Then open **Docker → Add Container**, pick the Picstome template and set:
 | Photo Storage URL | `https://photos.example.com` |
 | Admin Email | your email |
 | Admin Password | a strong password |
-| SMTP Host / Port / User / Password | your mail provider |
+| SMTP Host / Port / User / Password | your mail provider (optional at first) |
 | From Address | e.g. `hello@example.com` |
 | Timezone | e.g. `Europe/Madrid` |
 
