@@ -1,0 +1,6 @@
+* text=auto
+*.sh text eol=lf
+*.patch text eol=lf
+Dockerfile text eol=lf
+*.conf.template text eol=lf
+*.php text eol=lf

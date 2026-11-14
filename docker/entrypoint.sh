@@ -52,6 +52,17 @@ export LIVEWIRE_TEMPORARY_FILE_UPLOAD_DISK="${LIVEWIRE_TEMPORARY_FILE_UPLOAD_DIS
 
 export S3_BUCKET="${S3_BUCKET:-picstome}"
 export S3_REGION="${S3_REGION:-us-east-1}"
+
+# This URL carries the S3 API calls as well as the links shown to browsers, so
+# the container must be able to reach it itself. Left unset the entrypoint used
+# to abort under "set -u"; fall back to the bundled MinIO so the container still
+# boots, and say so loudly because browsers cannot use 127.0.0.1.
+if [ -z "${PICSTOME_PHOTOS_URL:-}" ]; then
+    echo "WARN: PICSTOME_PHOTOS_URL is not set. Falling back to http://127.0.0.1:9000." >&2
+    echo "WARN: Set it to the address clients and this container both use for port 9000," >&2
+    echo "WARN: for example http://192.168.1.10:9000." >&2
+    PICSTOME_PHOTOS_URL="http://127.0.0.1:9000"
+fi
 export PICSTOME_PHOTOS_URL="${PICSTOME_PHOTOS_URL%/}"
 export AUTO_MIGRATE="${AUTO_MIGRATE:-true}"
 
