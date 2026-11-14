@@ -78,6 +78,11 @@ if [ -z "${MAIL_FROM_ADDRESS:-}" ] && [ -n "${PICSTOME_ADMIN_EMAIL:-}" ]; then
     export MAIL_FROM_ADDRESS="${PICSTOME_ADMIN_EMAIL}"
 fi
 
+# The configured admin is the operator of a self-hosted install, so their team
+# is kept off the hosted free plan (1 GB, one contract and one invoice a month).
+# Set to false to let the admin keep the free plan like any other account.
+export PICSTOME_ADMIN_UNLIMITED="${PICSTOME_ADMIN_UNLIMITED:-true}"
+
 if [ -z "${PICSTOME_PHOTOS_URL}" ]; then
     export PICSTOME_PHOTOS_URL="http://127.0.0.1:9000"
     warn "PICSTOME_PHOTOS_URL is not set. Photos will only resolve inside the container."
@@ -232,13 +237,10 @@ fi
 # First admin account
 # ---------------------------------------------------------------------------
 if [ -n "${PICSTOME_ADMIN_EMAIL:-}" ]; then
-    if [ -z "${PICSTOME_ADMIN_PASSWORD:-}" ]; then
-        PICSTOME_ADMIN_PASSWORD="$(gen_secret 16)"
-        printf '%s\n' "${PICSTOME_ADMIN_PASSWORD}" > "${DATA_DIR}/initial-admin-password.txt"
-        chmod 600 "${DATA_DIR}/initial-admin-password.txt"
-        warn "No PICSTOME_ADMIN_PASSWORD set; generated one in ${DATA_DIR}/initial-admin-password.txt."
-    fi
-    export PICSTOME_ADMIN_PASSWORD
+    # A missing password is only a problem when the account still has to be
+    # created; docker/first-run.php generates and stores one in that case, so an
+    # existing install that simply relies on its saved password stays quiet.
+    export PICSTOME_ADMIN_PASSWORD="${PICSTOME_ADMIN_PASSWORD:-}"
     as_app_user php artisan tinker --execute="require '/usr/local/share/picstome/first-run.php';" \
         || warn "First-run admin bootstrap failed; register an account in the web UI instead."
 else

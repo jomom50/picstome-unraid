@@ -21,7 +21,7 @@ All persistent state lives under `/data`, which is the only path that has to sur
 - **Two addresses clients can reach.** `APP_URL` (web UI) and `PICSTOME_PHOTOS_URL` (S3 endpoint) both appear in share links and in the `<img>` URLs of gallery pages, so any browser that opens a gallery must be able to resolve and reach them. A single `localhost` value is only enough for a test on the same machine.
 - **Serve it at the root of a hostname.** `/` has to be the app, so use `picstome.example.com`, not `example.com/picstome`. Behind a reverse proxy that means one host per address (section 3).
 - **Keep `/data` on local disk.** SQLite runs in WAL mode, which is unreliable on network shares; use a cache-pool or local path on Unraid. Photos are ordinary MinIO objects and can live on any disk you mount at `/data/minio`.
-- **Admin Email is required on first start.** It creates the account, the studio, and admin access.
+- **Admin Email is required on first start.** It creates the account, the studio and admin access, and its team is kept free of the hosted plan limits (see **Admin Unlimited**).
 - **Mail is optional to begin with.** Leave SMTP empty and the admin account is still created, already verified; add SMTP later for gallery, contract and reminder email.
 - **The container runs as root** (it binds port 80 and owns `/data`), so do not pass `--user`.
 - **Linux containers only**, `amd64` and `arm64`.
@@ -266,7 +266,7 @@ Then open `https://example.com` and sign in with the admin credentials.
 
 ## 5. Settings worth knowing
 
-**Storage and contract limits.** Picstome's hosted free plan caps accounts at 1 GB and one contract/invoice per month. The first admin is created with unlimited limits, which is what a self-hosted install wants. Accounts that register later still start at 1 GB — raise or clear their limit under **Users** in the admin area.
+**Storage and contract limits.** Picstome's hosted free plan caps accounts at 1 GB and one contract/invoice per month, and shows the subscribe prompts. That plan is what the web registration form applies, so an account created there starts capped even on your own server. The container therefore keeps the **Admin Email** account on unlimited storage, contracts and invoices, and clears the plan flags on every start — which also promotes an admin account that was registered through the UI before. Turn that off with **Admin Unlimited** (`PICSTOME_ADMIN_UNLIMITED=false`). Accounts that register later still start at 1 GB — raise or clear their limit under **Users** in the admin area.
 
 **Photo delivery.** `PICSTOME_PHOTO_CDN_DOMAIN` defaults to `bunny`, which serves images straight from your own storage. Nothing leaves your server, but the lightbox receives the full-size original. Setting it to `wsrv.nl` sends images through a third-party resizing CDN instead, which is lighter on bandwidth but shares gallery URLs with that service (and requires it to reach your Photo Storage URL).
 
@@ -345,7 +345,7 @@ The queue worker processes them. Confirm it is running: `docker exec Picstome su
 5. Submit at <https://ca.unraid.net/submit/new>, run **Validate** and **Scan**, and fix whatever the scanner reports.
 6. Tag a release (`v1.0.0`) so Community Apps can track updates through the versioned tags produced by the GitHub Actions workflow.
 
-The repository license (MIT) covers the packaging files. Picstome itself is AGPL-3.0; the image contains it and the source, including the patch, is published here.
+The repository is licensed AGPL-3.0, the same license as Picstome itself. The image contains the upstream source; this repository publishes the packaging files and the patch applied to it.
 
 ---
 

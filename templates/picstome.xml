@@ -47,6 +47,8 @@ Upstream project (AGPL-3.0): https://github.com/picstome/picstome</Description>
 
   <Config Name="Admin Password" Target="PICSTOME_ADMIN_PASSWORD" Default="" Mode="" Description="Password for the first admin account. Only used when no user exists yet. Leave empty to generate one into the appdata folder." Type="Variable" Display="always" Required="false" Mask="true"></Config>
 
+  <Config Name="Admin Unlimited" Target="PICSTOME_ADMIN_UNLIMITED" Default="true" Mode="" Description="Keep the admin account free of the hosted plan limits (1 GB storage, one contract and one invoice per month). Enforced on every start, so an account registered in the web UI is promoted too. Set to false to leave the admin on the free plan." Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+
   <Config Name="SMTP Host" Target="MAIL_HOST" Default="" Mode="" Description="Mail server for account verification, gallery and contract emails. Only needed when Mail Transport is smtp — leave it empty to install without mail and set it later." Type="Variable" Display="always" Required="false" Mask="false"></Config>
 
   <Config Name="SMTP Port" Target="MAIL_PORT" Default="587" Mode="" Description="587 for STARTTLS, 465 for implicit TLS." Type="Variable" Display="always" Required="true" Mask="false">587</Config>
