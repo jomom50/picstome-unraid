@@ -268,7 +268,9 @@ Then open `https://example.com` and sign in with the admin credentials.
 
 **Storage and contract limits.** Picstome's hosted free plan caps accounts at 1 GB and one contract/invoice per month, and shows the subscribe prompts. That plan is what the web registration form applies, so an account created there starts capped even on your own server. The container therefore keeps the **Admin Email** account on unlimited storage, contracts and invoices, and clears the plan flags on every start — which also promotes an admin account that was registered through the UI before. Turn that off with **Admin Unlimited** (`PICSTOME_ADMIN_UNLIMITED=false`). Accounts that register later still start at 1 GB — raise or clear their limit under **Users** in the admin area.
 
-**Photo delivery.** `PICSTOME_PHOTO_CDN_DOMAIN` defaults to `bunny`, which serves images straight from your own storage. Nothing leaves your server, but the lightbox receives the full-size original. Setting it to `wsrv.nl` sends images through a third-party resizing CDN instead, which is lighter on bandwidth but shares gallery URLs with that service (and requires it to reach your Photo Storage URL).
+**Photo delivery.** `PICSTOME_PHOTO_CDN_DOMAIN` defaults to `bunny`, which serves images straight from your own storage. Nothing leaves your server, but the lightbox receives the processed 2048 px original. Setting it to `wsrv.nl` sends images through a third-party resizing CDN instead; that service has to reach your Photo Storage URL from the public internet, so with a LAN-only address every lightbox image comes back broken even though the grid works.
+
+**Thumbnail size.** Grid thumbnails are generated as WebP at `PICSTOME_PHOTO_SMALL_THUMB_RESIZE` pixels (default 1000 in this image, 500 upstream). The processed original is `PICSTOME_PHOTO_RESIZE` (2048). Existing photos keep the size they were processed at, so after changing either value rebuild the thumbnails with `docker exec -it -u www-data -e HOME=/tmp Picstome php artisan photos:generate-thumbnails --force`.
 
 **Public homepage.** The app's `/` redirects to the dashboard, so visitors land on the login screen — there is no setting in the UI for that. Picstome's public portfolio lives at `/@handle/portfolio` and is toggled on the **Portfolio** page in the app (it shows *Enable Public Portfolio* while disabled). The **Landing Page** field ships empty; set it to `/@yourhandle/portfolio` after enabling the portfolio. `patches/0002-landing-redirect.patch` makes the home route send guests there, while a signed-in visitor still gets the dashboard. Clear the field to go back to the login screen.
 
@@ -321,6 +323,9 @@ Some routers do not support NAT loopback. Add the proxy's LAN address to the con
 ```
 --add-host photos.example.com:192.168.1.10
 ```
+
+**Gallery images are broken or blurry**
+A broken icon in the lightbox while the grid still shows pictures means the image URL points at a service that cannot reach your storage, usually `wsrv.nl`. Set **Photo CDN Mode** to `bunny` (the default) so the browser fetches images from your own Photo Storage URL. Soft or blurry grid thumbnails are the generated WebP being displayed larger than its pixel size: raise `PICSTOME_PHOTO_SMALL_THUMB_RESIZE` (default 1000) and run `photos:generate-thumbnails --force`, which also regenerates thumbnails made by an older image at 500 px.
 
 **413 Request Entity Too Large**
 Raise `Max Upload Size` in the template, and `client_max_body_size` in NPM.

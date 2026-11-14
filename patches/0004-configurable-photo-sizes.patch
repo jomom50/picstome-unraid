@@ -1,0 +1,30 @@
+Subject: [PATCH] Read photo and thumbnail sizes from the environment
+
+A self-hosted install has different trade-offs from the hosted service: grid
+thumbnails generated at 500 px look soft on a large or high-density screen, and
+the processed original is the only copy a lightbox can show. Hard-coded sizes
+leave no way to tune that without editing the source.
+
+--- a/config/picstome.php
++++ b/config/picstome.php
+@@ -2,7 +2,7 @@
+ 
+ return [
+ 
+-    'photo_resize' => 2048,
++    'photo_resize' => (int) env('PICSTOME_PHOTO_RESIZE', 2048),
+ 
+     /**
+      * Fake payments mode: skips Stripe completely so the payment flow can be
+@@ -11,9 +11,9 @@
+     'payments_fake' => (bool) env('PAYMENTS_FAKE', false)
+         && env('APP_ENV', 'production') === 'local',
+ 
+-    'photo_thumb_resize' => 1000,
++    'photo_thumb_resize' => (int) env('PICSTOME_PHOTO_THUMB_RESIZE', 1000),
+ 
+-    'photo_small_thumb_resize' => 500,
++    'photo_small_thumb_resize' => (int) env('PICSTOME_PHOTO_SMALL_THUMB_RESIZE', 500),
+ 
+     /**
+      * Presigned URL lifetime for individual photo downloads. Videos use a

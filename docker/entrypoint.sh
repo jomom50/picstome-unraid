@@ -64,6 +64,16 @@ if [ -z "${PICSTOME_PHOTOS_URL:-}" ]; then
     PICSTOME_PHOTOS_URL="http://127.0.0.1:9000"
 fi
 export PICSTOME_PHOTOS_URL="${PICSTOME_PHOTOS_URL%/}"
+
+# Photos are served straight from your own object store by default. The other
+# mode proxies every image through wsrv.nl, a public service that cannot reach
+# an address only your LAN can see, which shows up as broken images in the
+# lightbox while the grid still works.
+export PICSTOME_PHOTO_CDN_DOMAIN="${PICSTOME_PHOTO_CDN_DOMAIN:-bunny}"
+
+# Gallery grid thumbnails are generated at this size. The upstream 500 px look
+# soft on a large or high-density screen, so match the 1000 px lightbox size.
+export PICSTOME_PHOTO_SMALL_THUMB_RESIZE="${PICSTOME_PHOTO_SMALL_THUMB_RESIZE:-1000}"
 export AUTO_MIGRATE="${AUTO_MIGRATE:-true}"
 
 export UPLOAD_MAX_SIZE="${UPLOAD_MAX_SIZE:-512M}"
