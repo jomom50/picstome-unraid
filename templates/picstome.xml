@@ -69,7 +69,11 @@ Upstream project (AGPL-3.0): https://github.com/picstome/picstome</Description>
 
   <Config Name="Language" Target="APP_LOCALE" Default="en" Mode="" Description="Default interface language: en or es." Type="Variable" Display="advanced" Required="false" Mask="false">en</Config>
 
-  <Config Name="Max Upload Size" Target="UPLOAD_MAX_SIZE" Default="512M" Mode="" Description="Maximum size of a single upload, applied to both nginx and PHP. Raise it if you upload large videos." Type="Variable" Display="advanced" Required="false" Mask="false">512M</Config>
+  <Config Name="Max Upload Size" Target="UPLOAD_MAX_SIZE" Default="512M" Mode="" Description="Maximum size of a single upload. Applies to nginx, PHP and the Livewire upload rule. Use a size like 512M or 2G. If a reverse proxy sits in front, its body limit has to be at least as large, on both the app and the photo hostname." Type="Variable" Display="advanced" Required="false" Mask="false">512M</Config>
+
+  <Config Name="Upload Temp Directory" Target="UPLOAD_TMP_DIR" Default="/data/tmp" Mode="rw" Description="Where incoming files are buffered before processing. Keep it under Appdata (or another mapped path with room for the largest upload), never the container filesystem." Type="Path" Display="advanced" Required="false" Mask="false">/data/tmp</Config>
+
+  <Config Name="PHP Request Timeout" Target="PHP_REQUEST_TIMEOUT" Default="1800" Mode="" Description="Hard ceiling in seconds for a single PHP request. Slow uploads of large files need this raised together with Max Upload Size." Type="Variable" Display="advanced" Required="false" Mask="false">1800</Config>
 
   <Config Name="PHP Memory Limit" Target="PHP_MEMORY_LIMIT" Default="512M" Mode="" Description="Memory allowed per PHP process." Type="Variable" Display="advanced" Required="false" Mask="false">512M</Config>
 

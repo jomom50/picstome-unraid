@@ -17,6 +17,22 @@ gen_secret() {
     php -r 'echo substr(str_replace(["+", "/", "="], "", base64_encode(random_bytes(64))), 0, (int) ($argv[1] ?? 32));' "${1:-32}"
 }
 
+# "10G" -> kilobytes, because Livewire's file rule is expressed in KB.
+size_to_kb() {
+    local value="${1:-}" number unit
+    number="$(printf '%s' "${value}" | tr -cd '0-9')"
+    unit="$(printf '%s' "${value}" | tr -cd 'a-zA-Z' | tr '[:lower:]' '[:upper:]')"
+
+    [ -n "${number}" ] || { printf '5242880'; return 0; }
+
+    case "${unit}" in
+        G|GB) printf '%s' "$((number * 1024 * 1024))" ;;
+        M|MB) printf '%s' "$((number * 1024))" ;;
+        K|KB) printf '%s' "${number}" ;;
+        *)    printf '%s' "$((number / 1024))" ;;
+    esac
+}
+
 # PHP CLI runs as www-data so SQLite WAL files and the compiled caches keep the
 # same ownership as the web process.
 as_app_user() {
@@ -77,8 +93,17 @@ export PICSTOME_PHOTO_SMALL_THUMB_RESIZE="${PICSTOME_PHOTO_SMALL_THUMB_RESIZE:-1
 export AUTO_MIGRATE="${AUTO_MIGRATE:-true}"
 
 export UPLOAD_MAX_SIZE="${UPLOAD_MAX_SIZE:-512M}"
+# Incoming files are buffered here before processing. It has to live on the
+# persistent volume: /tmp is the container layer, and a multi-gigabyte upload
+# there can fill the Docker image on the host.
+export UPLOAD_TMP_DIR="${UPLOAD_TMP_DIR:-${DATA_DIR}/tmp}"
+# Livewire's own rule for temporary uploads is in kilobytes, so follow the
+# configured limit instead of silently capping uploads at 5 GiB.
+export LIVEWIRE_TEMPORARY_FILE_UPLOAD_MAX_KB="${LIVEWIRE_TEMPORARY_FILE_UPLOAD_MAX_KB:-$(size_to_kb "${UPLOAD_MAX_SIZE}")}"
 export PHP_MEMORY_LIMIT="${PHP_MEMORY_LIMIT:-512M}"
 export PHP_MAX_EXECUTION_TIME="${PHP_MAX_EXECUTION_TIME:-300}"
+# Hard ceiling php-fpm puts on a single request; big uploads need the room.
+export PHP_REQUEST_TIMEOUT="${PHP_REQUEST_TIMEOUT:-1800}"
 export QUEUE_WORKER_TIMEOUT="${QUEUE_WORKER_TIMEOUT:-3700}"
 export QUEUE_WORKER_TRIES="${QUEUE_WORKER_TRIES:-1}"
 
@@ -132,7 +157,7 @@ fi
 # ---------------------------------------------------------------------------
 # Persistent layout
 # ---------------------------------------------------------------------------
-mkdir -p "${DATA_DIR}/minio" "${DATA_DIR}/storage" "${DATA_DIR}/logs"
+mkdir -p "${DATA_DIR}/minio" "${DATA_DIR}/storage" "${DATA_DIR}/logs" "${UPLOAD_TMP_DIR}"
 mkdir -p \
     "${DATA_DIR}/storage/app/private" \
     "${DATA_DIR}/storage/app/public" \
@@ -229,16 +254,22 @@ rm -f /etc/nginx/sites-enabled/default
 cat > /usr/local/etc/php/conf.d/zz-picstome.ini <<PHPINI
 upload_max_filesize = ${UPLOAD_MAX_SIZE}
 post_max_size = ${UPLOAD_MAX_SIZE}
+upload_tmp_dir = ${UPLOAD_TMP_DIR}
 memory_limit = ${PHP_MEMORY_LIMIT}
 max_execution_time = ${PHP_MAX_EXECUTION_TIME}
-max_input_time = 300
+max_input_time = ${PHP_REQUEST_TIMEOUT}
 date.timezone = ${APP_TIMEZONE}
 expose_php = Off
 PHPINI
 
+# php-fpm terminates a request that runs longer than this, which a slow upload
+# of a large file will hit.
+sed -i "s/^request_terminate_timeout = .*/request_terminate_timeout = ${PHP_REQUEST_TIMEOUT}/" \
+    /usr/local/etc/php-fpm.d/zz-picstome.conf
+
 touch "${DB_DATABASE}"
 chown www-data:www-data "${DATA_DIR}" "${DB_DATABASE}" 2>/dev/null || true
-chown -R www-data:www-data "${DATA_DIR}/storage" 2>/dev/null || true
+chown -R www-data:www-data "${DATA_DIR}/storage" "${UPLOAD_TMP_DIR}" 2>/dev/null || true
 chown -R www-data:www-data "${APP_DIR}/bootstrap/cache" 2>/dev/null || true
 chown www-data:www-data "${APP_DIR}/.env" 2>/dev/null || true
 

@@ -1,0 +1,25 @@
+Subject: [PATCH] Let the deployment raise the Livewire upload ceiling
+
+Production hard-codes 5242880 KB (5 GiB) as the temporary upload rule, so a
+larger Max Upload Size is rejected by Livewire before PHP or nginx ever see it.
+Honour the environment there too, keeping the 5 GiB default.
+
+--- a/config/livewire.php
++++ b/config/livewire.php
+@@ -1,9 +1,12 @@
+ <?php
+ 
+-// Local/testing need room for camera originals; production keeps the 5 MB guard.
+-$temporaryUploadMaxKb = in_array(env('APP_ENV', 'production'), ['local', 'testing'], true)
+-    ? (int) env('LIVEWIRE_TEMPORARY_FILE_UPLOAD_MAX_KB', 102400)
+-    : 5242880;
++// Local/testing need room for camera originals; production keeps the 5 GB guard
++// unless the container sets LIVEWIRE_TEMPORARY_FILE_UPLOAD_MAX_KB, which the
++// entrypoint derives from the configured upload limit.
++$temporaryUploadMaxKb = (int) env(
++    'LIVEWIRE_TEMPORARY_FILE_UPLOAD_MAX_KB',
++    in_array(env('APP_ENV', 'production'), ['local', 'testing'], true) ? 102400 : 5242880
++);
+ 
+ return [
+ 
