@@ -112,6 +112,10 @@ export QUEUE_WORKER_TRIES="${QUEUE_WORKER_TRIES:-1}"
 # connection warning on every request; keep it off unless asked for.
 export NIGHTWATCH_ENABLED="${NIGHTWATCH_ENABLED:-false}"
 
+# Issued invoices are numbered accounting documents, so deleting one is opt-in.
+# See patches/0006-allow-invoice-delete.patch.
+export PICSTOME_ALLOW_INVOICE_DELETE="${PICSTOME_ALLOW_INVOICE_DELETE:-false}"
+
 export TRUSTED_PROXIES="${TRUSTED_PROXIES:-}"
 
 # Picstome grants the /admin screens (queue, stats, emails, translations) and

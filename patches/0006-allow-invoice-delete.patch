@@ -1,0 +1,90 @@
+Subject: [PATCH] Allow deleting issued invoices when explicitly enabled
+
+An issued invoice is a numbered accounting document, so the draft-only rule is
+right by default. A self-hosted install that is testing, or that does not fall
+under retention rules, still needs a way to remove one from the UI instead of
+editing the database by hand.
+
+PICSTOME_ALLOW_INVOICE_DELETE=false keeps the current behaviour. When enabled,
+issued invoices show the Delete button, the policy and the model guard allow it,
+and the stored PDF is removed with the row.
+
+--- a/config/picstome.php
++++ b/config/picstome.php
+@@ -11,6 +11,13 @@
+     'payments_fake' => (bool) env('PAYMENTS_FAKE', false)
+         && env('APP_ENV', 'production') === 'local',
+ 
++    /**
++     * Allow deleting invoices that were already issued. An issued invoice is a
++     * numbered accounting document, so this stays off unless asked for;
++     * deleting one leaves a gap in its series and removes its stored PDF.
++     */
++    'allow_invoice_delete' => (bool) env('PICSTOME_ALLOW_INVOICE_DELETE', false),
++
+     'photo_thumb_resize' => (int) env('PICSTOME_PHOTO_THUMB_RESIZE', 1000),
+ 
+     'photo_small_thumb_resize' => (int) env('PICSTOME_PHOTO_SMALL_THUMB_RESIZE', 500),
+--- a/app/Policies/InvoicePolicy.php
++++ b/app/Policies/InvoicePolicy.php
+@@ -47,7 +47,8 @@
+      */
+     public function delete(User $user, Invoice $invoice): bool
+     {
+-        return $invoice->team->is($user->currentTeam) && $invoice->isDraft();
++        return $invoice->team->is($user->currentTeam)
++            && ($invoice->isDraft() || (bool) config('picstome.allow_invoice_delete'));
+     }
+ 
+     /**
+--- a/app/Models/Invoice.php
++++ b/app/Models/Invoice.php
+@@ -10,6 +10,7 @@
+ use Illuminate\Database\Eloquent\Relations\BelongsTo;
+ use Illuminate\Database\Eloquent\Relations\HasMany;
+ use Illuminate\Database\Eloquent\Relations\HasOne;
++use Illuminate\Support\Facades\Storage;
+ use Illuminate\Support\Str;
+ use LogicException;
+ 
+@@ -134,9 +135,14 @@
+         });
+ 
+         static::deleting(function (Invoice $invoice) {
+-            if ($invoice->status !== self::STATUS_DRAFT) {
++            if ($invoice->status !== self::STATUS_DRAFT && ! config('picstome.allow_invoice_delete')) {
+                 throw new LogicException('Only draft invoices can be deleted.');
+             }
++
++            // The stored PDF would otherwise outlive the row that owns it.
++            if ($invoice->pdf_path) {
++                Storage::disk(config('picstome.disk'))->delete($invoice->pdf_path);
++            }
+         });
+ 
+         // Issued invoice PDFs count towards the team's billable storage.
+--- a/resources/views/pages/invoices/⚡show.blade.php
++++ b/resources/views/pages/invoices/⚡show.blade.php
+@@ -564,7 +564,9 @@
+                 <x-ts-button variant="outline" icon="pencil-square" :href="route('invoices.create', ['invoice' => $this->invoice->ulid])">
+                     {{ __('Edit') }}
+                 </x-ts-button>
++            @endif
+ 
++            @if ($this->invoice->isDraft() || config('picstome.allow_invoice_delete'))
+                 <x-ts-modal-trigger name="delete-invoice">
+                     <x-ts-button variant="outline" color="red" icon="trash">{{ __('Delete') }}</x-ts-button>
+                 </x-ts-modal-trigger>
+@@ -623,8 +625,10 @@
+ 
+     <x-confirm-modal
+         name="delete-invoice"
+-        :title="__('Delete this draft?')"
+-        :message="__('Draft invoices can be deleted without any trace. Issued invoices can never be deleted.')"
++        :title="__('Delete this invoice?')"
++        :message="config('picstome.allow_invoice_delete')
++            ? __('This removes the invoice and its stored PDF. The number it used stays consumed, so the series will show a gap.')
++            : __('Draft invoices can be deleted without any trace. Issued invoices can never be deleted.')"
+         :confirm-label="__('Delete')"
+         method="delete"
+     />
