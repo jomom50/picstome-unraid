@@ -294,7 +294,28 @@ Large values work but get expensive: the file travels browser → app → MinIO 
 
 **Update:** bump `PICSTOME_REF` in the Dockerfile to the new upstream commit, rebuild, push, then use **Force Update** in the Unraid Docker tab. Migrations run automatically on start.
 
-If upstream changes `bootstrap/app.php` or `routes/web.php`, the build stops at the patch step. That is intentional: re-read the change, regenerate the affected file in `patches/`, and rebuild.
+If upstream changes `bootstrap/app.php`, `routes/web.php`, `config/livewire.php` or the photo-processing job, the build stops at the patch step. That is intentional: a broken upstream shape cannot produce an image, so nothing lands in `:latest` unnoticed. Re-read the change, regenerate the affected file in `patches/`, and rebuild.
+
+**The image never updates itself.** `PICSTOME_REF` pins one upstream commit, so a rebuild is a deliberate act. Nothing changes on your server until you pull a new image *and* recreate the container, and no update touches `/data` or your container settings — they live outside the image. Watchtower or Community Applications auto-update will also not move you between upstream versions.
+
+**Before an update, know how to get back.** The one-way part is not the image, it is the database migration that runs on start:
+
+```bash
+docker inspect Picstome --format '{{.Config.Image}} {{.Image}}'   # note what you run now
+docker images jomom50/picstome --format '{{.Tag}} {{.CreatedSince}}' | head
+```
+
+Every build also publishes an immutable `sha-<commit>` tag, so rolling back is recreating the container with that tag (in Unraid: edit the Repository field, or `docker run` the old tag) plus restoring the database if a migration already ran:
+
+```bash
+docker stop Picstome
+tar -czf /mnt/user/backups/picstome-$(date +%F).tar.gz \
+    -C /mnt/user/appdata picstome \
+    -C /mnt/user/ChelseaPhotography Picstome
+docker start Picstome
+```
+
+Keep a backup from before the update; restoring one is the reliable way back, since a rollback of the image alone leaves the newer schema in place.
 
 ---
 
