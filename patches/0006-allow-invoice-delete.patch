@@ -6,8 +6,8 @@ under retention rules, still needs a way to remove one from the UI instead of
 editing the database by hand.
 
 PICSTOME_ALLOW_INVOICE_DELETE=false keeps the current behaviour. When enabled,
-issued invoices show the Delete button, the policy and the model guard allow it,
-and the stored PDF is removed with the row.
+issued and rectified invoices show the Delete button, the policy and the model
+guard allow it, and the stored PDF is removed with the row.
 
 --- a/config/picstome.php
 +++ b/config/picstome.php
@@ -65,7 +65,14 @@ and the stored PDF is removed with the row.
          // Issued invoice PDFs count towards the team's billable storage.
 --- a/resources/views/pages/invoices/⚡show.blade.php
 +++ b/resources/views/pages/invoices/⚡show.blade.php
-@@ -564,7 +564,9 @@
+@@ -558,13 +558,15 @@
+         </div>
+     </div>
+ 
+-    @if ($this->invoice->isDraft() || $this->invoice->isIssued())
++    @if ($this->invoice->isDraft() || $this->invoice->isIssued() || (config('picstome.allow_invoice_delete') && $this->invoice->isRectified()))
+         <div class="mt-8 flex flex-wrap items-center justify-end gap-2 border-t border-zinc-200 pt-6 dark:border-white/10">
+             @if ($this->invoice->isDraft())
                  <x-ts-button variant="outline" icon="pencil-square" :href="route('invoices.create', ['invoice' => $this->invoice->ulid])">
                      {{ __('Edit') }}
                  </x-ts-button>

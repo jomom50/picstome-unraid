@@ -143,6 +143,12 @@ RUN set -eux; \
 ARG MINIO_RELEASE=RELEASE.2025-09-07T16-13-09Z
 ARG MC_RELEASE=RELEASE.2025-08-13T08-35-41Z
 
+# Lets a running container be checked against the build it came from:
+#   docker inspect Picstome --format '{{index .Config.Labels "picstome.upstream"}}'
+ARG PICSTOME_REF
+LABEL picstome.upstream="${PICSTOME_REF}" \
+      picstome.features="invoice-delete,large-uploads,photo-sizes,direct-photo-urls"
+
 ARG TARGETARCH
 RUN set -eux; \
     arch="${TARGETARCH:-amd64}"; \
