@@ -294,7 +294,7 @@ Large values work but get expensive: the file travels browser → app → MinIO 
 
 **Update:** bump `PICSTOME_REF` in the Dockerfile to the new upstream commit, rebuild, push, then use **Force Update** in the Unraid Docker tab. Migrations run automatically on start.
 
-If upstream changes `bootstrap/app.php`, `routes/web.php`, `config/livewire.php` or the photo-processing job, the build stops at the patch step. That is intentional: a broken upstream shape cannot produce an image, so nothing lands in `:latest` unnoticed. Re-read the change, regenerate the affected file in `patches/`, and rebuild.
+If upstream changes `bootstrap/app.php`, `routes/web.php`, `config/picstome.php` or `config/livewire.php`, the build stops at the patch step. That is intentional: a broken upstream shape cannot produce an image, so nothing lands in `:latest` unnoticed. Re-read the change, regenerate the affected file in `patches/`, and rebuild.
 
 **The image never updates itself.** `PICSTOME_REF` pins one upstream commit, so a rebuild is a deliberate act. Nothing changes on your server until you pull a new image *and* recreate the container, and no update touches `/data` or your container settings — they live outside the image. Watchtower or Community Applications auto-update will also not move you between upstream versions.
 
@@ -396,7 +396,7 @@ The repository is licensed AGPL-3.0, the same license as Picstome itself. The im
 
 ```
 Dockerfile                     multi-stage build, pinned upstream commit
-patches/                       the two upstream changes (trusted proxies, landing redirect)
+patches/                       the small upstream changes (trusted proxies, landing redirect, photo sizes, upload ceiling)
 docker/entrypoint.sh           first-run setup, APP_KEY, migrations, admin
 docker/first-run.php           creates the verified admin and studio
 docker/supervisord.conf        nginx, php-fpm, queue, scheduler, MinIO

@@ -107,6 +107,11 @@ export PHP_REQUEST_TIMEOUT="${PHP_REQUEST_TIMEOUT:-1800}"
 export QUEUE_WORKER_TIMEOUT="${QUEUE_WORKER_TIMEOUT:-3700}"
 export QUEUE_WORKER_TRIES="${QUEUE_WORKER_TRIES:-1}"
 
+# Laravel Nightwatch is the framework's hosted monitoring agent. A self-hosted
+# install has neither the agent socket nor a token, so it only produces a
+# connection warning on every request; keep it off unless asked for.
+export NIGHTWATCH_ENABLED="${NIGHTWATCH_ENABLED:-false}"
+
 export TRUSTED_PROXIES="${TRUSTED_PROXIES:-}"
 
 # Picstome grants the /admin screens (queue, stats, emails, translations) and

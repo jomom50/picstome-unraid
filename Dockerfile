@@ -14,7 +14,7 @@ ARG NODE_VERSION=22
 
 # Upstream commit this image is built and tested against. Bump it deliberately
 # and regenerate the patches in patches/ when you do.
-ARG PICSTOME_REF=e1baba36883894e2cd65d86a2d69799d3bff8b16
+ARG PICSTOME_REF=a98d0d4dac1faccce69300a6e4f89cf99ee51dc3
 
 ###########################  source  ###########################
 FROM alpine:latest AS source
