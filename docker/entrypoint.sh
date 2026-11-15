@@ -284,11 +284,18 @@ as_app_user php artisan view:cache >/dev/null 2>&1 || warn "Could not cache the 
 # background so the first screen of `docker logs` says so instead.
 (
     sleep 20
-    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "${AWS_URL}/" 2>/dev/null || true)"
+    probe="$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 10 "${AWS_URL}/" 2>/dev/null || true)"
+    code="${probe%% *}"
+    redirect="${probe#* }"
 
     if [ -z "${code}" ] || [ "${code}" = "000" ]; then
         warn "Cannot reach ${PICSTOME_PHOTOS_URL} from inside this container, so uploads will fail."
         warn "Use an address the container itself can resolve, or add --add-host <host>:<lan-ip>."
+    elif [ -n "${redirect}" ] && [ "${redirect}" != "${probe}" ] && [ "${redirect}" != "${AWS_URL}/" ]; then
+        # A proxy that redirects http to https turns a signed PUT into a GET, and
+        # the SDK reports the follow-up lookup as NoSuchKey instead of the cause.
+        warn "${PICSTOME_PHOTOS_URL} redirects to ${redirect%"${S3_BUCKET}"*/}, so S3 writes fail."
+        warn "Set the Photo Storage URL to that address (usually the https one) and restart."
     fi
 ) &
 
